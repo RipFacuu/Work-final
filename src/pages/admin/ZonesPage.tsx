@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLeague, Zone } from '../../contexts/LeagueContext';
 import { useForm } from 'react-hook-form';
 import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
@@ -8,155 +8,106 @@ interface ZoneFormData {
   name: string;
   leagueId: string;
   categoryId: string;
-  isEditable: boolean; // Agregar esta propiedad
+  isEditable: boolean;
 }
 
 const ZonesPage: React.FC = () => {
-  const { 
-    leagues, 
-    getCategoriesByLeague, 
+  const {
+    leagues,
+    getCategoriesByLeague,
     getZonesByCategory,
-    addZone, 
-    updateZone, 
-    deleteZone 
+    addZone,
+    updateZone,
+    deleteZone,
   } = useLeague();
-  
+
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [selectedLeague, setSelectedLeague] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  
-  // Get categories for selected league
-  const categories = getCategoriesByLeague(selectedLeague);
-  
-  // Get zones for selected category
-  const zones = selectedCategory ? getZonesByCategory(selectedCategory) : [];
+  const [selectedLeague, setSelectedLeague] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
 
-  const handleLeagueChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const leagueId = e.target.value;
-    setSelectedLeague(leagueId);
-    setSelectedCategory(''); // Reset categoría cuando cambia la liga
-  };
-  
-  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ZoneFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<ZoneFormData>({
     defaultValues: {
-      leagueId: selectedLeague,
-      categoryId: selectedCategory,
+      leagueId: '',
+      categoryId: '',
       name: '',
-      isEditable: true // Valor por defecto
-    }
+      isEditable: true,
+    },
   });
-  
-  // Watch form values for dynamic dropdowns
+
   const watchLeagueId = watch('leagueId');
-  
-  // Get categories for selected league
-  const leagueCategories = getCategoriesByLeague(watchLeagueId || selectedLeague);
-  
-  // Filter zones by selections
-  const filteredZones = selectedCategory 
-    ? getZonesByCategory(selectedCategory)
-    : [];
-  
-  // Initialize select values
-  React.useEffect(() => {
-    if (leagueCategories.length > 0 && !selectedCategory) {
-      setSelectedCategory(leagueCategories[0].id);
+  const watchCategoryId = watch('categoryId');
+
+  useEffect(() => {
+    if (!isAdding && !editingId) {
+      setValue('leagueId', selectedLeague);
+      setValue('categoryId', selectedCategory);
     }
-  }, [leagueCategories, selectedCategory]);
-  
+  }, [selectedLeague, selectedCategory, setValue, isAdding, editingId]);
+
   const handleAddClick = () => {
     setIsAdding(true);
     setEditingId(null);
     reset({
       leagueId: selectedLeague,
-      categoryId: selectedCategory, // Usamos la categoría actualmente seleccionada
-      name: ''
+      categoryId: selectedCategory,
+      name: '',
+      isEditable: true,
     });
   };
-  
+
   const handleEditClick = (zone: Zone) => {
     setIsAdding(false);
     setEditingId(zone.id);
     reset({
       name: zone.name,
       leagueId: zone.leagueId,
-      categoryId: zone.categoryId
+      categoryId: zone.categoryId,
+      isEditable: true,
     });
-    
-    // Update selections
-    setSelectedLeague(zone.leagueId);
-    setSelectedCategory(zone.categoryId);
   };
-  
+
   const handleCancelClick = () => {
     setIsAdding(false);
     setEditingId(null);
+    reset();
   };
-  
+
   const onSubmit = (data: ZoneFormData) => {
     if (isAdding) {
       addZone(data);
     } else if (editingId) {
       updateZone(editingId, data);
     }
-    
     setIsAdding(false);
     setEditingId(null);
     reset();
   };
-  
+
   const handleDeleteZone = (id: string) => {
-    if (window.confirm('¿Estás seguro de eliminar esta zona? Esta acción eliminará todos los equipos y fixtures asociados.')) {
+    if (
+      window.confirm(
+        '¿Estás seguro de eliminar esta zona? Esta acción eliminará todos los equipos y fixtures asociados.'
+      )
+    ) {
       deleteZone(id);
     }
   };
-  
-  // Remove this duplicate declaration
-  // const handleLeagueChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-  //   const leagueId = e.target.value;
-  //   setSelectedLeague(leagueId);
-  //   setSelectedCategory('');
-  // };
-  
-  // Update category options when league changes
-  React.useEffect(() => {
-    if (watchLeagueId && leagueCategories.length > 0) {
-      setValue('categoryId', leagueCategories[0].id);
-    }
-  }, [watchLeagueId, leagueCategories, setValue]);
-  
-  // Define components outside of return statement
-  const ZoneSelect = () => (
-    <div>
-      <label htmlFor="zoneFilter" className="form-label">
-        Zona
-      </label>
-      <select
-        id="zoneFilter"
-        className="form-input"
-        value={selectedZone}
-        onChange={(e) => setSelectedZone(e.target.value)}
-        disabled={isAdding || !!editingId || !selectedCategory}
-      >
-        <option value="">Seleccionar zona</option>
-        {zones.map(zone => (
-          <option key={zone.id} value={zone.id}>
-            {zone.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
 
-  // Determine if it's Liga Masculina
-  const isMasculina = selectedLeague === 'liga_masculina';
+  const categories = getCategoriesByLeague(watchLeagueId || selectedLeague);
+  const zones = watchCategoryId ? getZonesByCategory(watchCategoryId) : [];
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Zonas</h1>
-        
         <button
           className="btn btn-primary flex items-center space-x-2"
           onClick={handleAddClick}
@@ -166,22 +117,25 @@ const ZonesPage: React.FC = () => {
           <span>Agregar Zona</span>
         </button>
       </div>
-      
-      {/* Filters */}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
-          <label htmlFor="leagueFilter" className="form-label">
+          <label className="form-label" htmlFor="leagueFilter">
             Liga
           </label>
           <select
             id="leagueFilter"
             className="form-input"
             value={selectedLeague}
-            onChange={handleLeagueChange}
+            onChange={(e) => {
+              const leagueId = e.target.value;
+              setSelectedLeague(leagueId);
+              setSelectedCategory('');
+            }}
             disabled={isAdding || !!editingId}
           >
             <option value="">Seleccionar Liga</option>
-            {leagues.map(league => (
+            {leagues.map((league) => (
               <option key={league.id} value={league.id}>
                 {league.name}
               </option>
@@ -190,7 +144,7 @@ const ZonesPage: React.FC = () => {
         </div>
 
         <div>
-          <label htmlFor="categoryFilter" className="form-label">
+          <label className="form-label" htmlFor="categoryFilter">
             Categoría
           </label>
           <select
@@ -200,22 +154,19 @@ const ZonesPage: React.FC = () => {
             onChange={(e) => {
               const categoryId = e.target.value;
               setSelectedCategory(categoryId);
-              // Actualizamos también el valor del formulario
-              setValue('categoryId', categoryId);
             }}
             disabled={isAdding || !!editingId || !selectedLeague}
           >
             <option value="">Seleccionar Categoría</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name}
+            {getCategoriesByLeague(selectedLeague).map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
               </option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Add/Edit Form */}
       {(isAdding || editingId) && (
         <div className="bg-gray-50 p-4 rounded-md mb-6 border">
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -226,65 +177,59 @@ const ZonesPage: React.FC = () => {
                 </label>
                 <input
                   id="name"
-                  type="text"
-                  className={cn(
-                    "form-input",
-                    errors.name && "border-red-500"
-                  )}
+                  className={cn('form-input', errors.name && 'border-red-500')}
                   {...register('name', { required: 'El nombre es requerido' })}
                 />
                 {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                  <p className="text-sm text-red-500">{errors.name.message}</p>
                 )}
               </div>
-              
+
               <div>
                 <label className="form-label" htmlFor="leagueId">
                   Liga
                 </label>
                 <select
                   id="leagueId"
-                  className={cn(
-                    "form-input",
-                    errors.leagueId && "border-red-500"
-                  )}
+                  className={cn('form-input', errors.leagueId && 'border-red-500')}
                   {...register('leagueId', { required: 'La liga es requerida' })}
+                  onChange={(e) => setValue('leagueId', e.target.value)}
                 >
-                  {leagues.map(league => (
+                  <option value="">Seleccionar Liga</option>
+                  {leagues.map((league) => (
                     <option key={league.id} value={league.id}>
                       {league.name}
                     </option>
                   ))}
                 </select>
                 {errors.leagueId && (
-                  <p className="mt-1 text-sm text-red-600">{errors.leagueId.message}</p>
+                  <p className="text-sm text-red-500">{errors.leagueId.message}</p>
                 )}
               </div>
-              
+
               <div>
                 <label className="form-label" htmlFor="categoryId">
                   Categoría
                 </label>
                 <select
                   id="categoryId"
-                  className={cn(
-                    "form-input",
-                    errors.categoryId && "border-red-500"
-                  )}
+                  className={cn('form-input', errors.categoryId && 'border-red-500')}
                   {...register('categoryId', { required: 'La categoría es requerida' })}
+                  onChange={(e) => setValue('categoryId', e.target.value)}
                 >
-                  {leagueCategories.map(category => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
+                  <option value="">Seleccionar Categoría</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
                     </option>
                   ))}
                 </select>
                 {errors.categoryId && (
-                  <p className="mt-1 text-sm text-red-600">{errors.categoryId.message}</p>
+                  <p className="text-sm text-red-500">{errors.categoryId.message}</p>
                 )}
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
@@ -294,7 +239,6 @@ const ZonesPage: React.FC = () => {
                 <X size={18} />
                 <span>Cancelar</span>
               </button>
-              
               <button
                 type="submit"
                 className="btn btn-primary flex items-center space-x-2"
@@ -306,10 +250,9 @@ const ZonesPage: React.FC = () => {
           </form>
         </div>
       )}
-      
-      {/* Zones List */}
+
       {selectedCategory ? (
-        filteredZones.length > 0 ? (
+        zones.length > 0 ? (
           <div className="bg-white border rounded-md overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -323,30 +266,24 @@ const ZonesPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredZones.map(zone => (
-                  <tr key={zone.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {zone.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                      <div className="flex justify-end space-x-2">
-                        <button
-                          className="text-indigo-600 hover:text-indigo-900"
-                          onClick={() => handleEditClick(zone)}
-                          disabled={isAdding || !!editingId}
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          className="text-red-600 hover:text-red-900"
-                          onClick={() => handleDeleteZone(zone.id)}
-                          disabled={isAdding || !!editingId}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
+                {zones.map((zone) => (
+                  <tr key={zone.id}>
+                    <td className="px-6 py-4">{zone.name}</td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      <button
+                        className="text-indigo-600 hover:text-indigo-900"
+                        onClick={() => handleEditClick(zone)}
+                        disabled={isAdding || !!editingId}
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button
+                        className="text-red-600 hover:text-red-900"
+                        onClick={() => handleDeleteZone(zone.id)}
+                        disabled={isAdding || !!editingId}
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -354,20 +291,14 @@ const ZonesPage: React.FC = () => {
             </table>
           </div>
         ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay zonas</h3>
-            <p className="text-gray-500 mb-4">
-              No hay zonas en esta categoría. Haz clic en "Agregar Zona" para crear una.
-            </p>
-          </div>
+          <p className="text-center py-12 text-gray-500">
+            No hay zonas. Agregá una para comenzar.
+          </p>
         )
       ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-md">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Selecciona una categoría</h3>
-          <p className="text-gray-500">
-            Selecciona una liga y una categoría para ver y gestionar las zonas.
-          </p>
-        </div>
+        <p className="text-center py-12 text-gray-500">
+          Seleccioná una liga y categoría para ver las zonas.
+        </p>
       )}
     </div>
   );
