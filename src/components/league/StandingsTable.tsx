@@ -110,24 +110,6 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ zoneId }) => {
                 PJ
               </th>
               <th className="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider w-20">
-                G
-              </th>
-              <th className="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider w-20">
-                E
-              </th>
-              <th className="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider w-20">
-                P
-              </th>
-              <th className="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider w-20">
-                GF
-              </th>
-              <th className="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider w-20">
-                GC
-              </th>
-              <th className="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider w-20">
-                DIF
-              </th>
-              <th className="px-6 py-4 text-center text-xs font-medium text-white uppercase tracking-wider w-20">
                 PTS
               </th>
             </tr>
@@ -172,35 +154,8 @@ const StandingsTable: React.FC<StandingsTableProps> = ({ zoneId }) => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-center font-medium">
                     {standing.played}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-green-700 text-center font-medium">
-                    {standing.won}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-center font-medium">
-                    {standing.drawn}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-red-700 text-center font-medium">
-                    {standing.lost}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-center font-medium">
-                    {standing.goalsFor}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-center font-medium">
-                    {standing.goalsAgainst}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                    <span className={cn(
-                      "px-2 py-1 rounded",
-                      (standing.goalsFor - standing.goalsAgainst) > 0 ? "bg-green-100 text-green-800" : 
-                      (standing.goalsFor - standing.goalsAgainst) < 0 ? "bg-red-100 text-red-800" : 
-                      "bg-gray-100 text-gray-800"
-                    )}>
-                      {standing.goalsFor - standing.goalsAgainst}
-                    </span>
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="text-lg font-bold bg-primary-100 text-primary-800 px-3 py-1 rounded-full">
-                      {standing.points}
-                    </span>
+                    <span className="text-lg font-bold">{standing.points}</span>
                   </td>
                 </tr>
               );

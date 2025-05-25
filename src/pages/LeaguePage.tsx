@@ -129,18 +129,6 @@ const LeaguePage: React.FC = () => {
           <button
             className={cn(
               "py-4 px-6 font-medium text-sm focus:outline-none whitespace-nowrap flex items-center space-x-2",
-              activeTab === 'results'
-                ? "border-b-2 border-primary-600 text-primary-700"
-                : "text-gray-500 hover:text-gray-700"
-            )}
-            onClick={() => setActiveTab('results')}
-          >
-            <Newspaper size={18} />
-            <span>Resultados</span>
-          </button>
-          <button
-            className={cn(
-              "py-4 px-6 font-medium text-sm focus:outline-none whitespace-nowrap flex items-center space-x-2",
               activeTab === 'standings'
                 ? "border-b-2 border-primary-600 text-primary-700"
                 : "text-gray-500 hover:text-gray-700"
@@ -149,18 +137,6 @@ const LeaguePage: React.FC = () => {
           >
             <Trophy size={18} />
             <span>Tabla de Posiciones</span>
-          </button>
-          <button
-            className={cn(
-              "py-4 px-6 font-medium text-sm focus:outline-none whitespace-nowrap flex items-center space-x-2",
-              activeTab === 'teams'
-                ? "border-b-2 border-primary-600 text-primary-700"
-                : "text-gray-500 hover:text-gray-700"
-            )}
-            onClick={() => setActiveTab('teams')}
-          >
-            <Users size={18} />
-            <span>Equipos</span>
           </button>
         </nav>
       </div>

@@ -69,13 +69,22 @@ const Header: React.FC = () => {
             </NavLink>
             
             {isAuthenticated ? (
-              <button
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium bg-accent-500 hover:bg-accent-600 text-white transition-colors"
-                onClick={handleLogout}
-              >
-                <LogOut size={18} />
-                <span>Salir</span>
-              </button>
+              <>
+                <Link
+                  to="/admin"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium bg-primary-700 hover:bg-primary-800 text-white transition-colors"
+                >
+                  <User size={18} />
+                  <span>Panel Admin</span>
+                </Link>
+                <button
+                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium bg-accent-500 hover:bg-accent-600 text-white transition-colors"
+                  onClick={handleLogout}
+                >
+                  <LogOut size={18} />
+                  <span>Salir</span>
+                </button>
+              </>
             ) : (
               <Link
                 to="/admin/login"
@@ -144,16 +153,26 @@ const Header: React.FC = () => {
             </NavLink>
             
             {isAuthenticated ? (
-              <button
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium bg-accent-500 hover:bg-accent-600 text-white transition-colors text-left"
-                onClick={() => {
-                  handleLogout();
-                  toggleMenu();
-                }}
-              >
-                <LogOut size={18} />
-                <span>Salir</span>
-              </button>
+              <>
+                <Link
+                  to="/admin"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium bg-primary-800 hover:bg-primary-900 text-white transition-colors text-left"
+                  onClick={toggleMenu}
+                >
+                  <User size={18} />
+                  <span>Panel Admin</span>
+                </Link>
+                <button
+                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium bg-accent-500 hover:bg-accent-600 text-white transition-colors text-left"
+                  onClick={() => {
+                    handleLogout();
+                    toggleMenu();
+                  }}
+                >
+                  <LogOut size={18} />
+                  <span>Salir</span>
+                </button>
+              </>
             ) : (
               <Link
                 to="/admin/login"

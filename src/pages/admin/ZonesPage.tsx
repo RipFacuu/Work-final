@@ -70,7 +70,7 @@ const ZonesPage: React.FC = () => {
     setEditingId(null);
     reset({
       leagueId: selectedLeague,
-      categoryId: selectedCategory,
+      categoryId: selectedCategory, // Usamos la categoría actualmente seleccionada
       name: ''
     });
   };
@@ -197,10 +197,15 @@ const ZonesPage: React.FC = () => {
             id="categoryFilter"
             className="form-input"
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={(e) => {
+              const categoryId = e.target.value;
+              setSelectedCategory(categoryId);
+              // Actualizamos también el valor del formulario
+              setValue('categoryId', categoryId);
+            }}
             disabled={isAdding || !!editingId || !selectedLeague}
           >
-            <option value="">Seleccionar categoría</option>
+            <option value="">Seleccionar Categoría</option>
             {categories.map(category => (
               <option key={category.id} value={category.id}>
                 {category.name}
