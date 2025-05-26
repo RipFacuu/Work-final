@@ -476,13 +476,13 @@ export const mockLeagueData = {
     {
       id: 'lifufe',
       name: 'LIFUFE',
-      description: 'Liga de Fútbol Federado',
+      description: 'Liga de Fútbol Femenino',
       logo: undefined
     },
     {
       id: 'mundialito',
       name: 'Mundialito',
-      description: 'Torneo Internacional',
+      description: 'Torneo',
       logo: undefined
     }
   ],
