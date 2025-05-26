@@ -67,6 +67,15 @@ export interface League {
   logo?: string;
 }
 
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  date: string;
+  active: boolean;
+}
+
 interface LeagueContextType {
   leagues: League[];
   categories: Category[];
@@ -74,6 +83,7 @@ interface LeagueContextType {
   teams: Team[];
   fixtures: Fixture[];
   standings: Standing[];
+  courses: Course[];
   
   // League operations
   getLeague: (id: string) => League | undefined;
@@ -108,10 +118,18 @@ interface LeagueContextType {
   // Standings operations
   getStandingsByZone: (zoneId: string) => Standing[];
   updateStanding: (id: string, data: Partial<Standing>) => void;
+
+  // Course operations
+  getCourses: () => Course[];
+  addCourse: (course: Omit<Course, 'id'>) => void;
+  updateCourse: (id: string, data: Partial<Course>) => void;
+  deleteCourse: (id: string) => void;
 }
 
+// Solo una declaración del contexto
 const LeagueContext = createContext<LeagueContextType | undefined>(undefined);
 
+// Solo una declaración de useLeague
 export function useLeague() {
   const context = useContext(LeagueContext);
   if (context === undefined) {
@@ -132,6 +150,7 @@ export const LeagueProvider: React.FC<LeagueProviderProps> = ({ children }) => {
   const [teams, setTeams] = useState<Team[]>(mockLeagueData.teams);
   const [fixtures, setFixtures] = useState<Fixture[]>(mockLeagueData.fixtures);
   const [standings, setStandings] = useState<Standing[]>(mockLeagueData.standings);
+  const [courses, setCourses] = useState<Course[]>([]);
 
   // League operations
   const getLeague = (id: string) => {
@@ -140,13 +159,7 @@ export const LeagueProvider: React.FC<LeagueProviderProps> = ({ children }) => {
 
   // Category operations
   const getCategoriesByLeague = (leagueId: string) => {
-    if (!leagueId) return [];
     return categories.filter(category => category.leagueId === leagueId);
-  };
-
-  const getZonesByCategory = (categoryId: string) => {
-    if (!categoryId) return [];
-    return zones.filter(zone => zone.categoryId === categoryId);
   };
 
   const addCategory = (category: Omit<Category, 'id'>) => {
@@ -158,23 +171,20 @@ export const LeagueProvider: React.FC<LeagueProviderProps> = ({ children }) => {
   };
 
   const updateCategory = (id: string, data: Partial<Category>) => {
-    setCategories(categories.map(cat => 
+    setCategories(categories.map(cat =>
       cat.id === id ? { ...cat, ...data } : cat
     ));
   };
 
   const deleteCategory = (id: string) => {
-    // First, delete all related zones
-    const relatedZones = zones.filter(zone => zone.categoryId === id);
-    relatedZones.forEach(zone => deleteZone(zone.id));
-    
-    // Then delete the category
     setCategories(categories.filter(cat => cat.id !== id));
   };
 
   // Zone operations
-  // Eliminar esta segunda declaración de getZonesByCategory que está duplicada
-  
+  const getZonesByCategory = (categoryId: string) => {
+    return zones.filter(zone => zone.categoryId === categoryId);
+  };
+
   const addZone = (zone: Omit<Zone, 'id'>) => {
     const newZone = {
       ...zone,
@@ -184,18 +194,12 @@ export const LeagueProvider: React.FC<LeagueProviderProps> = ({ children }) => {
   };
 
   const updateZone = (id: string, data: Partial<Zone>) => {
-    setZones(zones.map(zone => 
+    setZones(zones.map(zone =>
       zone.id === id ? { ...zone, ...data } : zone
     ));
   };
 
   const deleteZone = (id: string) => {
-    // First, delete all related teams, fixtures, and standings
-    setTeams(teams.filter(team => team.zoneId !== id));
-    setFixtures(fixtures.filter(fixture => fixture.zoneId !== id));
-    setStandings(standings.filter(standing => standing.zoneId !== id));
-    
-    // Then delete the zone
     setZones(zones.filter(zone => zone.id !== id));
   };
 
@@ -210,48 +214,16 @@ export const LeagueProvider: React.FC<LeagueProviderProps> = ({ children }) => {
       id: `team_${Date.now()}`
     };
     setTeams([...teams, newTeam]);
-    
-    // Add a new standing entry for this team
-    const newStanding: Standing = {
-      id: `standing_${Date.now()}`,
-      teamId: newTeam.id,
-      leagueId: newTeam.leagueId,
-      categoryId: newTeam.categoryId,
-      zoneId: newTeam.zoneId,
-      points: 0,
-      played: 0,
-      won: 0,
-      drawn: 0,
-      lost: 0,
-      goalsFor: 0,
-      goalsAgainst: 0
-    };
-    setStandings([...standings, newStanding]);
   };
 
   const updateTeam = (id: string, data: Partial<Team>) => {
-    setTeams(teams.map(team => 
+    setTeams(teams.map(team =>
       team.id === id ? { ...team, ...data } : team
     ));
   };
 
   const deleteTeam = (id: string) => {
-    // Delete team
     setTeams(teams.filter(team => team.id !== id));
-    
-    // Delete standings for this team
-    setStandings(standings.filter(standing => standing.teamId !== id));
-    
-    // Update fixtures to remove matches with this team
-    setFixtures(fixtures.map(fixture => {
-      const updatedMatches = fixture.matches.filter(
-        match => match.homeTeamId !== id && match.awayTeamId !== id
-      );
-      return {
-        ...fixture,
-        matches: updatedMatches
-      };
-    }));
   };
 
   // Fixture operations
@@ -268,7 +240,7 @@ export const LeagueProvider: React.FC<LeagueProviderProps> = ({ children }) => {
   };
 
   const updateFixture = (id: string, data: Partial<Fixture>) => {
-    setFixtures(fixtures.map(fixture => 
+    setFixtures(fixtures.map(fixture =>
       fixture.id === id ? { ...fixture, ...data } : fixture
     ));
   };
@@ -279,247 +251,86 @@ export const LeagueProvider: React.FC<LeagueProviderProps> = ({ children }) => {
 
   // Match operations
   const updateMatchResult = (matchId: string, homeScore: number, awayScore: number) => {
-    // Find the match and its fixture
-    let updatedFixture: Fixture | undefined;
-    let updatedMatch: Match | undefined;
-    
-    const updatedFixtures = fixtures.map(fixture => {
-      const matchIndex = fixture.matches.findIndex(match => match.id === matchId);
-      
-      if (matchIndex !== -1) {
-        // Save reference to the fixture and match for standings update
-        updatedFixture = fixture;
-        
-        // Create updated match with scores
-        const match = fixture.matches[matchIndex];
-        updatedMatch = {
-          ...match,
-          homeScore,
-          awayScore,
-          played: true
-        };
-        
-        // Return updated fixture with updated match
-        const updatedMatches = [...fixture.matches];
-        updatedMatches[matchIndex] = updatedMatch;
-        
-        return {
-          ...fixture,
-          matches: updatedMatches
-        };
-      }
-      
-      return fixture;
-    });
-    
-    // Update fixtures with new match results
-    setFixtures(updatedFixtures);
-    
-    // If we found the match and fixture, update the standings
-    if (updatedFixture && updatedMatch) {
-      updateStandingsForMatch(updatedMatch, updatedFixture);
-    }
-  };
-  
-  // Helper function to update standings after a match result
-  const updateStandingsForMatch = (match: Match, fixture: Fixture) => {
-    // Find home and away team standings
-    const homeTeamStanding = standings.find(
-      s => s.teamId === match.homeTeamId && 
-           s.leagueId === fixture.leagueId &&
-           s.categoryId === fixture.categoryId &&
-           s.zoneId === fixture.zoneId
-    );
-    
-    const awayTeamStanding = standings.find(
-      s => s.teamId === match.awayTeamId && 
-           s.leagueId === fixture.leagueId &&
-           s.categoryId === fixture.categoryId &&
-           s.zoneId === fixture.zoneId
-    );
-    
-    if (!homeTeamStanding || !awayTeamStanding || !match.homeScore || !match.awayScore) {
-      return;
-    }
-    
-    // Calculate standing updates based on match result
-    const homeScore = match.homeScore;
-    const awayScore = match.awayScore;
-    
-    // Determine match outcome
-    let homeWon = false;
-    let awayWon = false;
-    let draw = false;
-    
-    if (homeScore > awayScore) {
-      homeWon = true;
-    } else if (awayScore > homeScore) {
-      awayWon = true;
-    } else {
-      draw = true;
-    }
-    
-    // Update home team standing
-    const updatedHomeStanding: Standing = {
-      ...homeTeamStanding,
-      played: homeTeamStanding.played + 1,
-      won: homeTeamStanding.won + (homeWon ? 1 : 0),
-      drawn: homeTeamStanding.drawn + (draw ? 1 : 0),
-      lost: homeTeamStanding.lost + (awayWon ? 1 : 0),
-      points: homeTeamStanding.points + (homeWon ? 3 : (draw ? 1 : 0)),
-      goalsFor: homeTeamStanding.goalsFor + homeScore,
-      goalsAgainst: homeTeamStanding.goalsAgainst + awayScore
-    };
-    
-    // Update away team standing
-    const updatedAwayStanding: Standing = {
-      ...awayTeamStanding,
-      played: awayTeamStanding.played + 1,
-      won: awayTeamStanding.won + (awayWon ? 1 : 0),
-      drawn: awayTeamStanding.drawn + (draw ? 1 : 0),
-      lost: awayTeamStanding.lost + (homeWon ? 1 : 0),
-      points: awayTeamStanding.points + (awayWon ? 3 : (draw ? 1 : 0)),
-      goalsFor: awayTeamStanding.goalsFor + awayScore,
-      goalsAgainst: awayTeamStanding.goalsAgainst + homeScore
-    };
-    
-    // Update standings
-    setStandings(standings.map(standing => {
-      if (standing.id === homeTeamStanding.id) {
-        return updatedHomeStanding;
-      }
-      if (standing.id === awayTeamStanding.id) {
-        return updatedAwayStanding;
-      }
-      return standing;
-    }));
+    setFixtures(fixtures.map(fixture => ({
+      ...fixture,
+      matches: fixture.matches.map(match =>
+        match.id === matchId
+          ? { ...match, homeScore, awayScore, played: true }
+          : match
+      )
+    })));
   };
 
   // Standings operations
   const getStandingsByZone = (zoneId: string) => {
-    if (!zoneId) return [];
     return standings.filter(standing => standing.zoneId === zoneId);
   };
-  
+
   const updateStanding = (id: string, data: Partial<Standing>) => {
-    // Verificar si el standing ya existe
-    const existingStanding = standings.find(s => s.id === id);
-    
-    if (existingStanding) {
-      // Actualizar standing existente
-      setStandings(standings.map(standing => 
-        standing.id === id ? { ...standing, ...data } : standing
-      ));
-    } else {
-      // Crear nuevo standing
-      const newStanding = {
-        id,
-        teamId: data.teamId || '',
-        leagueId: data.leagueId || '',
-        categoryId: data.categoryId || '',
-        zoneId: data.zoneId || '',
-        points: data.points || 0,
-        played: data.played || 0,
-        won: data.won || 0,
-        drawn: data.drawn || 0,
-        lost: data.lost || 0,
-        goalsFor: data.goalsFor || 0,
-        goalsAgainst: data.goalsAgainst || 0
-      };
-      
-      setStandings([...standings, newStanding]);
-    }
+    setStandings(standings.map(standing =>
+      standing.id === id ? { ...standing, ...data } : standing
+    ));
   };
 
-  // Añadir esta función al LeagueContext
-  const importStandingsFromCSV = (csvData: string, zoneId: string) => {
-  try {
-    // Parsear el CSV (formato simple: cada línea es una fila, valores separados por comas)
-    const rows = csvData.split('\n').filter(row => row.trim() !== '');
-    
-    // Ignorar la primera fila (encabezados)
-    const dataRows = rows.slice(1);
-    
-    // Obtener equipos de la zona
-    const zoneTeams = teams.filter(team => team.zoneId === zoneId);
-    
-    // Procesar cada fila
-    dataRows.forEach(row => {
-      const columns = row.split(',').map(col => col.trim());
-      
-      // Formato esperado: POS, EQUIPO, PJ, PTS
-      if (columns.length >= 4) {
-        const teamName = columns[1];
-        const played = parseInt(columns[2]);
-        const points = parseInt(columns[3]);
-        
-        // Buscar el equipo por nombre
-        const team = zoneTeams.find(t => t.name === teamName);
-        
-        if (team && !isNaN(played) && !isNaN(points)) {
-          // Buscar el standing correspondiente
-          const standing = standings.find(s => 
-            s.teamId === team.id && 
-            s.zoneId === zoneId
-          );
-          
-          if (standing) {
-            // Actualizar el standing
-            updateStanding(standing.id, {
-              played,
-              points,
-              // Mantener otros valores o calcularlos si es necesario
-            });
-          }
-        }
-      }
-    });
-    
-    return true;
-  } catch (error) {
-    console.error('Error al importar CSV:', error);
-    return false;
-  }
-};
+  // Course operations
+  const getCourses = () => {
+    return courses;
+  };
+
+  const addCourse = (course: Omit<Course, 'id'>) => {
+    const newCourse = {
+      ...course,
+      id: `course_${Date.now()}`
+    };
+    setCourses([...courses, newCourse]);
+  };
+
+  const updateCourse = (id: string, data: Partial<Course>) => {
+    setCourses(courses.map(course =>
+      course.id === id ? { ...course, ...data } : course
+    ));
+  };
+
+  const deleteCourse = (id: string) => {
+    setCourses(courses.filter(course => course.id !== id));
+  };
+
+  const value: LeagueContextType = {
+    leagues,
+    categories,
+    zones,
+    teams,
+    fixtures,
+    standings,
+    courses,
+    getLeague,
+    getCategoriesByLeague,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    getZonesByCategory,
+    addZone,
+    updateZone,
+    deleteZone,
+    getTeamsByZone,
+    addTeam,
+    updateTeam,
+    deleteTeam,
+    getFixturesByZone,
+    addFixture,
+    updateFixture,
+    deleteFixture,
+    updateMatchResult,
+    getStandingsByZone,
+    updateStanding,
+    getCourses,
+    addCourse,
+    updateCourse,
+    deleteCourse
+  };
 
   return (
-    <LeagueContext.Provider value={{
-      leagues,
-      categories,
-      zones,
-      teams,
-      fixtures,
-      standings,
-      
-      // Methods
-      getLeague,
-      
-      getCategoriesByLeague,
-      addCategory,
-      updateCategory,
-      deleteCategory,
-      
-      getZonesByCategory,
-      addZone,
-      updateZone,
-      deleteZone,
-      
-      getTeamsByZone,
-      addTeam,
-      updateTeam,
-      deleteTeam,
-      
-      getFixturesByZone,
-      addFixture,
-      updateFixture,
-      deleteFixture,
-      
-      updateMatchResult,
-      
-      getStandingsByZone,
-      updateStanding,
-      importStandingsFromCSV // Añadir la nueva función
-    }}>
+    <LeagueContext.Provider value={value}>
       {children}
     </LeagueContext.Provider>
   );

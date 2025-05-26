@@ -15,16 +15,19 @@ import StandingsPage from './pages/admin/StandingsPage';
 import CategoriesPage from './pages/admin/CategoriesPage';
 import ZonesPage from './pages/admin/ZonesPage';
 import NotFoundPage from './pages/NotFoundPage';
+import CoursesPage from './pages/CoursesPage';
+import AdminCoursesPage from './pages/admin/CoursesPage';
 
-function App() {
+const App: React.FC = () => {
   return (
-    <Router>
-      <AuthProvider>
-        <LeagueProvider>
+    <AuthProvider>
+      <LeagueProvider>
+        <Router>
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
               <Route path="league/:leagueId" element={<LeaguePage />} />
+              <Route path="courses" element={<CoursesPage />} /> {/* Ruta pública */}
               <Route path="admin/login" element={<AdminLogin />} />
               
               <Route path="admin" element={
@@ -38,15 +41,14 @@ function App() {
                 <Route path="standings" element={<StandingsPage />} />
                 <Route path="categories" element={<CategoriesPage />} />
                 <Route path="zones" element={<ZonesPage />} />
+                <Route path="courses" element={<AdminCoursesPage />} />
               </Route>
-              
-              <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
-        </LeagueProvider>
-      </AuthProvider>
-    </Router>
+        </Router>
+      </LeagueProvider>
+    </AuthProvider>
   );
-}
+};
 
 export default App;
